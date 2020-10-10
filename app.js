@@ -1,8 +1,8 @@
 const dotenv = require('dotenv');
-const conversations = require('./src/conversations');
+const service = require('./src/service');
 
 // Initialize dotenv
 dotenv.config();
 
-conversations()
+service()
   .then(() => console.log('Data finalized'));
