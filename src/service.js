@@ -5,6 +5,7 @@ const {
 } = require('./service/liveperson');
 const resumedFromInactiveQuery = require('./resumedFromInactiveQuery');
 const segmentRequests = require('./utils/segmentRequests');
+const config = require('./@config');
 
 const hash = {
   numberOfConversations: 0,
@@ -59,13 +60,6 @@ const searchBuilderQuery = async (domain, pool, range, offset = 0, limit = 100, 
   }
 };
 
-const config = {
-  sla: 5, // minutes
-  timeLength: 2, // length to search back from today
-  timeType: 'hour', // minute | hour | day
-  requestsPerPool: 2, // how many requests per cycle should we fire off?
-};
-
 const getCampaigns = async () => {
   // Get service map
   const domains = await getLpDomains();
@@ -81,7 +75,6 @@ const getCampaigns = async () => {
     ]);
     hash.results = [...hash.results, ...results];
   }
-
 
   // Totals
   hash.numberOfConversations = hash.numberOfConversationsPerPool.reduce((accum, { numberOfConversations }) => accum + numberOfConversations, 0);
