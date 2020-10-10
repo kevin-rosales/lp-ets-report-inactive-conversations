@@ -1,19 +1,21 @@
 const { get, has } = require('lodash');
-const moment = require('moment');
 const {
   getLpDomains,
   conversationsSearch,
 } = require('./service/liveperson');
 const resumedFromInactiveQuery = require('./resumedFromInactiveQuery');
+const segmentRequests = require('./utils/segmentRequests');
 
 const hash = {
   numberOfConversations: 0,
   numbersClosedBySystem: 0,
   resumedFromInactive: 0,
   resumedFromInactivePct: 0,
+  numberOfConversationsPerPool: [],
+  results: [],
 };
 
-const searchBuilderQuery = async (domain, pool, range, offset = 0, limit = 100) => {
+const searchBuilderQuery = async (domain, pool, range, offset = 0, limit = 100, first = true) => {
   try {
     const conversations = await conversationsSearch(domain, offset, limit, range);
     const numberOfConversations = get(conversations, '_metadata.count', 0);
@@ -26,8 +28,10 @@ const searchBuilderQuery = async (domain, pool, range, offset = 0, limit = 100) 
     const resumedFromInactive = resumedFromInactiveQuery(conversationHistoryRecords);
 
 
-    // Totals
-    hash.numberOfConversations = numberOfConversations;
+    // Add to hash
+    if (first) {
+      hash.numberOfConversationsPerPool.push({ pool, numberOfConversations });
+    }
     hash.numbersClosedBySystem += closedBySystem;
     hash.resumedFromInactive += resumedFromInactive;
 
@@ -39,7 +43,7 @@ const searchBuilderQuery = async (domain, pool, range, offset = 0, limit = 100) 
 
       const offsetNew = params.get('offset');
       const limitNew = params.get('limit');
-      return searchBuilderQuery(domain, pool, range, offsetNew, limitNew);
+      return searchBuilderQuery(domain, pool, range, offsetNew, limitNew, false);
     }
     // No new records
     return {
@@ -54,11 +58,12 @@ const searchBuilderQuery = async (domain, pool, range, offset = 0, limit = 100) 
     };
   }
 };
+
 const config = {
   sla: 5, // minutes
   timeLength: 2, // length to search back from today
-  timeType: 'hour', // hour | day
-  requestsPerPool: 3, // TODO: how many requests should we fire off?
+  timeType: 'hour', // minute | hour | day
+  requestsPerPool: 2, // how many requests per cycle should we fire off?
 };
 
 const getCampaigns = async () => {
@@ -66,36 +71,23 @@ const getCampaigns = async () => {
   const domains = await getLpDomains();
   const msgHist = get(domains.find(({ service }) => service === 'msgHist'), 'baseURI', '');
 
-  const { timeLength, timeType } = config;
+  // Split calls into segments as configured
+  const segmentCalls = segmentRequests(config);
 
-  // Store current time as base
-  const startTime = moment().subtract(timeLength, timeType);
+  // Call {requestPerPool} per each segment, a set has to finish before moving to the next segment
+  for await (const segmentFrame of segmentCalls) {
+    const results = await Promise.all([
+      ...segmentFrame.map((segment) => searchBuilderQuery(msgHist, segment.pool, segment.range)),
+    ]);
+    hash.results = [...hash.results, ...results];
+  }
 
-  const segmentTime = Array.from(Array(timeLength).keys()).map((index) => {
-    const from = moment(startTime).add(index, timeType).valueOf();
-    const to = moment(startTime).add(index + 1, timeType).valueOf();
-    return {
-      pool: index,
-      range: {
-        from, // start older
-        to, // end newer
-      },
-      human: {
-        from: moment(from).format('YYYY-MM-DD HH:mm:ss'),
-        to: moment(to).format('YYYY-MM-DD HH:mm:ss'),
-      },
-    };
-  });
 
-  const results = await Promise.all([
-    ...segmentTime.map((segment) => searchBuilderQuery(msgHist, segment.pool, segment.range)),
-  ]);
-
-  // Get Percentage
+  // Totals
+  hash.numberOfConversations = hash.numberOfConversationsPerPool.reduce((accum, { numberOfConversations }) => accum + numberOfConversations, 0);
   hash.resumedFromInactivePct = hash.resumedFromInactive / hash.numberOfConversations;
 
   // Log Results
-  console.log('getCampaigns -> results', results);
   console.log(hash);
 };
 
