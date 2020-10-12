@@ -25,7 +25,7 @@ $ npm i
 
 #### Instructions
 
-1. Create your **.env** example based on the **.env.example**
+1. Create your **.env** based on the **.env.example**
 ```bash
 
 $ cp .env.example .env
