@@ -28,7 +28,7 @@ const searchBuilderQuery = async (domain, pool, range, offset = 0, limit = 100, 
     const closedBySystem = conversationHistoryRecords.filter((conv) => conv.info.closeReason === 'TIMEOUT').length;
     const resumedFromInactive = resumedFromInactiveQuery(conversationHistoryRecords);
 
-
+    // TODO: return data and calculate later - if failure, we can rerun segments
     // Add to hash
     if (first) {
       hash.numberOfConversationsPerPool.push({ pool, numberOfConversations });
@@ -67,8 +67,9 @@ const getCampaigns = async () => {
 
   // Split calls into segments as configured
   const segmentCalls = segmentRequests(config);
-
+  console.log(`Strategy: Will run ${segmentCalls.length} segments (groups) of ${config.requestsPerPool}`);
   // Call {requestPerPool} per each segment, a set has to finish before moving to the next segment
+  // TODO: Convert to node pool when I get the chance
   for await (const segmentFrame of segmentCalls) {
     const results = await Promise.all([
       ...segmentFrame.map((segment) => searchBuilderQuery(msgHist, segment.pool, segment.range)),

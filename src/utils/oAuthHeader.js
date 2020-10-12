@@ -1,6 +1,10 @@
 const crypto = require('crypto');
 const OAuth = require('oauth-1.0a');
 
+/**
+ * @param {object} request pass request for oAuth1
+ * @param {boolean} internal set to true if using internal LP oAuth1 keys
+ */
 const oAuthHeader = (request, internal = false) => {
   const oauthEncrypt = OAuth({
     consumer: {

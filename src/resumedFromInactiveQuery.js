@@ -1,5 +1,6 @@
 const moment = require('moment');
 const { get } = require('lodash');
+const config = require('./@config');
 
 /**
  * This function will check every line for a matching line record where
@@ -22,8 +23,9 @@ const recoveredFromInactiveSearch = (messageRecords) => {
     const timeDifference = currentLineTime.diff(previousLinetime, 'minutes');
 
     // If timedifference is greater than SLA config
-    if (timeDifference >= 5) {
+    if (timeDifference >= config.sla) {
       foundInactive = true;
+      break;
     }
   }
   return foundInactive;
