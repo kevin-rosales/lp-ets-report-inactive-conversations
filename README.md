@@ -48,7 +48,7 @@ module.exports = {
   sla: 5, // minutes for a conversation to be considered as inactive
   timeLength: 10, // length to search back from today
   timeType: 'days', // minute | hour | day
-  requestsPerPool: 2, // how many requests per cycle should we fire off?
+  requestsPerPool: 2, // how many requests should we fire off in parallel? 
 };
 ```
 4. Run the script
