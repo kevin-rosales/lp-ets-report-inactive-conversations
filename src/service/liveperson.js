@@ -67,6 +67,7 @@ async function getLpDomains() {
  */
 async function conversationsSearch(domain, offset, limit, range) {
   try {
+    console.log("RANGE", range);
     const params = {
       v: '3.4',
       offset,
@@ -76,14 +77,16 @@ async function conversationsSearch(domain, offset, limit, range) {
       url: `https://${domain}/messaging_history/api/account/${process.env.LP_ACCOUNT}/conversations/search?${parseParameters(params)}`,
       method: 'post',
       data: {
-        start: {
-          ...range,
-        },
+        "start":{
+          "from":1630084999826,
+          "to":1630096676268
+      },
         status: [
           'CLOSE',
         ],
         contentToRetrieve: [
           'messageRecords',
+          'agentParticipants',
         ],
       },
     };
