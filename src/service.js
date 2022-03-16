@@ -160,7 +160,6 @@ const getCampaigns = async () => {
   //   TotalNumbersClosedBySystem,
   // });
   resumedData.map((dat) => {
-    console.log("dat", dat.startDay);
     const DayStarted = dat.startDay;
     const AgentGroup = dat.agentGroup;
     const TotalInactive = dat.totalInactive;

@@ -25,9 +25,12 @@ const recoveredFromInactiveSearch = (messageRecords, conversationId) => {
 
     // Check time difference
     const currentLineTime = moment(get(line, "timeL", ""));
+    const currentLineTime2 = get(line, "timeL", "");
     const previousLinetime = moment(
       get(messageRecords[index - 1], "timeL", "")
     );
+    const previousLinetime2 = get(messageRecords[index - 1], "timeL", "");
+
     const timeDifference = currentLineTime.diff(previousLinetime, "minutes");
 
     // If timedifference is greater than SLA config
@@ -55,20 +58,21 @@ const resumedFromInactiveQuery = (conversations = []) => {
 
   // Go through every conversation and parse out the message records
   for (const { messageRecords, info } of conversations) {
-    const {conversationId} = info;
     agentGroup = info.latestAgentGroupName;
     startDay = info.startTime;
 
-    const hasRecovered = recoveredFromInactiveSearch(messageRecords, conversationId);
+    const hasRecovered = recoveredFromInactiveSearch(
+      messageRecords,
+    );
     hasRecovered.map((f) => {
-      if (f.timeInactive <= 300) {
+      if (f.timeInactive <= 5) {
         // eslint-disable-next-line no-plusplus
         fiveMins++;
       }
-      if (f.timeInactive <= 1800 && f.timeInactive > 300) {
+      if (f.timeInactive <= 30 && f.timeInactive > 5) {
         thirtyMins++;
       }
-      if (f.timeInactive <= 3300 && f.timeInactive > 1800) {
+      if (f.timeInactive <= 55 && f.timeInactive > 30) {
         fiftyFiveMins++;
       }
       if (f.numberInactive >= 1) {
@@ -79,7 +83,6 @@ const resumedFromInactiveQuery = (conversations = []) => {
 
   const data = {
     startDay,
-    agentGroup,
     totalInactive: total,
     timeInactiveFiveMin: fiveMins,
     timeInactiveThirtyMin: thirtyMins,

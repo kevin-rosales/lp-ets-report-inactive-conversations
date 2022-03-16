@@ -1,42 +1,48 @@
-const axios = require('axios');
-const { get } = require('lodash');
-const oAuthHeader = require('../utils/oAuthHeader');
+const axios = require("axios");
+const { get } = require("lodash");
+const oAuthHeader = require("../utils/oAuthHeader");
 
-const parseParameters = (params) => Object.keys(params).map((element) => {
-  if (typeof params[element] === 'string' || typeof params[element] === 'number') return `${element}=${params[element]}`;
-  if (typeof params[element] === 'object' && params[element].length > 0) {
-    return params[element].map((param) => `${element}=${param}`).join('&');
-  }
-  return '';
-}).join('&');
-
+const parseParameters = (params) =>
+  Object.keys(params)
+    .map((element) => {
+      if (
+        typeof params[element] === "string" ||
+        typeof params[element] === "number"
+      )
+        return `${element}=${params[element]}`;
+      if (typeof params[element] === "object" && params[element].length > 0) {
+        return params[element].map((param) => `${element}=${param}`).join("&");
+      }
+      return "";
+    })
+    .join("&");
 
 async function lpLoginDomain() {
   try {
     const requestData = await axios({
-      method: 'GET',
+      method: "GET",
       url: `http://api.liveperson.net/api/account/${process.env.LP_ACCOUNT}/service/agentVep/baseURI.json?version=1.0`,
     });
-    return get(requestData, 'data.baseURI', '');
+    return get(requestData, "data.baseURI", "");
   } catch (e) {
-    return '';
+    return "";
   }
 }
 
 async function lpToken(domain) {
   try {
     const requestData = await axios({
-      method: 'POST',
+      method: "POST",
       url: `https://${domain}/api/account/${process.env.LP_ACCOUNT}/login`,
       params: {
-        v: '1.3',
+        v: "1.3",
       },
       data: {
         username: process.env.LP_USER,
         password: process.env.LP_PASSWORD,
       },
     });
-    return get(requestData, 'data', {});
+    return get(requestData, "data", {});
   } catch (e) {
     return {};
   }
@@ -45,16 +51,16 @@ async function lpToken(domain) {
 async function getLpDomains() {
   try {
     const url = `http://api.liveperson.net/api/account/${process.env.LP_ACCOUNT}/service/baseURI.json`;
-    const method = 'get';
+    const method = "get";
 
     const requestData = await axios({
       method,
       url,
       params: {
-        version: '1.0',
+        version: "1.0",
       },
     });
-    return get(requestData, 'data.baseURIs', []);
+    return get(requestData, "data.baseURIs", []);
   } catch (e) {
     return [];
   }
@@ -67,41 +73,38 @@ async function getLpDomains() {
  */
 async function conversationsSearch(domain, offset, limit, range) {
   try {
-    console.log("RANGE", range);
     const params = {
-      v: '3.4',
+      v: "3.4",
       offset,
       limit,
     };
     const requestDataFill = {
-      url: `https://${domain}/messaging_history/api/account/${process.env.LP_ACCOUNT}/conversations/search?${parseParameters(params)}`,
-      method: 'post',
+      url: `https://${domain}/messaging_history/api/account/${
+        process.env.LP_ACCOUNT
+      }/conversations/search?${parseParameters(params)}`,
+      method: "post",
       data: {
-        "start":{
-          "from":1630084999826,
-          "to":1630096676268
-      },
-        status: [
-          'CLOSE',
-        ],
-        contentToRetrieve: [
-          'messageRecords',
-          'agentParticipants',
-        ],
+        start: {
+          ...range,
+        },
+        status: ["CLOSE"],
+        contentToRetrieve: ["messageRecords", "agentParticipants"],
       },
     };
     const requestData = await axios({
       headers: {
-        ...oAuthHeader({ url: requestDataFill.url, method: requestDataFill.method }),
+        ...oAuthHeader({
+          url: requestDataFill.url,
+          method: requestDataFill.method,
+        }),
       },
       ...requestDataFill,
     });
-    return get(requestData, 'data', []);
+    return get(requestData, "data", []);
   } catch (e) {
     return [];
   }
 }
-
 
 module.exports = {
   lpLoginDomain,
